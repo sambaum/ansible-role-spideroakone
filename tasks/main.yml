@@ -1,0 +1,62 @@
+---
+
+- name: Install SpiderOak One package
+  become: yes
+  apt:
+    deb: "{{ spideroakone_download_url }}"
+    state: present
+
+- debug:
+    msg: "Installed version:  {{ lookup('pipe','SpiderOakONE --version') }}"
+
+
+- name: Template installer json
+  template:
+    src: install.json.j2
+    dest: ./install.json
+
+- name: Register device
+  command: SpiderOakONE --setup=./install.json
+  args:
+    creates: "{{ ansible_env['HOME'] }}/.config/SpiderOakONE/config.txt"
+  register: spideroakone_install_result
+
+- debug:
+    msg: "Install result: {{ spideroakone_install_result.stdout }}"
+
+- name: Create restore directories
+  file:
+    path: "{{ item.path | dirname  }}"
+    state: directory
+  with_items: "{{ spideroakone_restores }}"
+  when: spideroakone_restore_files
+
+- name: Restore files
+  command: SpiderOakONE --device {{ item.device }} -o  {{ item.path | dirname  }} --restore  {{ item.path }}
+  with_items: "{{ spideroakone_restores }}"
+  register: spideroakone_restore_result
+  when: spideroakone_restore_files
+
+- debug:
+    msg: "Restore result: {{ spideroakone_restore_result }}"
+  when: spideroakone_restore_files
+
+
+- name: Include dirs
+  command: SpiderOakONE --include-dir {{ item }} --force
+  with_items: "{{ spideroakone_backup_include_dir }}"
+
+- name: Include file
+  command: SpiderOakONE --include-file {{ item }} --force
+  with_items: "{{ spideroakone_backup_include_file }}"
+
+- name: Exclude dirs
+  command: SpiderOakONE --exclude-dir {{ item }} --force
+  with_items: "{{ spideroakone_backup_exclude_dir }}"
+
+- name: Exclude file
+  command: SpiderOakONE --exclude-file {{ item }} --force
+  with_items: "{{ spideroakone_backup_exclude_file }}"
+
+- debug:
+    msg: "Backup selecttion:  {{ lookup('pipe','SpiderOakONE --selection') }}"
