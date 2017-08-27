@@ -1,11 +1,14 @@
 ---
 
-# spideroakone_username
+#spideroakone_username
 #spideroakone_password
-#spideroakone_reinstall
 #spideroakone_devicename
 #https://spideroak.com/getbuild?platform=ubuntu&arch=x86_64
 
+spideroakone_user: root
+spideroakone_group: root
+
+spideroakone_reinstall: "false"
 
 spideroakone_mirror_url: https://spideroak.com/getbuild?
 spideroakone_platform: ubuntu

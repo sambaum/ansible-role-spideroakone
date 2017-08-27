@@ -1,0 +1,20 @@
+[Unit]
+Description=SpiderOak backup service
+Documentation=https://raw.githubusercontent.com/hv15/spideroak-systemd/master/README.md
+Documentation=https://spideroak.com/faq/how-can-i-use-spideroak-from-the-command-line
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User={{spideroakone_user}}
+Group={{spideroakone_group}}
+ExecStart=/usr/lib/systemd/scripts/spideroak
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /home/{{spideroakone_user}}/.config/SpiderOakONE
+ExecStartPre=/bin/chown {{spideroakone_user}}:{{spideroakone_group}} -R /home/{{spideroakone_user}}/.config/SpiderOakONE
+TimeoutStopSec=20
+KillMode=process
+Restart=on-failure

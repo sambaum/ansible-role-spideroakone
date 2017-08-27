@@ -1,14 +1,28 @@
 ---
 
-- name: Install SpiderOak One package
-  become: yes
-  apt:
-    deb: "{{ spideroakone_download_url }}"
+# - name: Install SpiderOak One package
+#   become: yes
+#   apt:
+#     deb: "{{ spideroakone_download_url }}"
+#     state: present
+
+
+- name: Adding key 573E3D1C51AE1B3D (spideroak)
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: 573E3D1C51AE1B3D
+
+- name: Adding Ubuntu repository http://apt.spideroak.com/ubuntu-spideroak-hardy/
+  apt_repository:
+    repo: deb http://apt.spideroak.com/ubuntu-spideroak-hardy/ release restricted
     state: present
 
-- debug:
-    msg: "Installed version:  {{ lookup('pipe','SpiderOakONE --version') }}"
-
+- name: Installing packages 
+  package:
+     name: "{{ item }}"
+     state: present
+  with_items:
+     - spideroakone
 
 - name: Template installer json
   template:
@@ -20,6 +34,7 @@
   args:
     creates: "{{ ansible_env['HOME'] }}/.config/SpiderOakONE/config.txt"
   register: spideroakone_install_result
+  failed_when: "'failed' in spideroakone_install_result.stdout|lower"
 
 - debug:
     msg: "Install result: {{ spideroakone_install_result.stdout }}"
@@ -31,8 +46,13 @@
   with_items: "{{ spideroakone_restores }}"
   when: spideroakone_restore_files
 
+- name: Start spideroak
+  systemd: state=stopped name=spideroak
+  when: spideroakone_restore_files
+
 - name: Restore files
-  command: SpiderOakONE --device {{ item.device }} -o  {{ item.path | dirname  }} --restore  {{ item.path }}
+  command: SpiderOakONE -o  {{ item.path | dirname  }} --restore  {{ item.path }}
+  #command: SpiderOakONE --device {{ item.device }} -o  {{ item.path | dirname  }} --restore  {{ item.path }}
   with_items: "{{ spideroakone_restores }}"
   register: spideroakone_restore_result
   when: spideroakone_restore_files
@@ -40,7 +60,6 @@
 - debug:
     msg: "Restore result: {{ spideroakone_restore_result }}"
   when: spideroakone_restore_files
-
 
 - name: Include dirs
   command: SpiderOakONE --include-dir {{ item }} --force
@@ -58,5 +77,50 @@
   command: SpiderOakONE --exclude-file {{ item }} --force
   with_items: "{{ spideroakone_backup_exclude_file }}"
 
-- debug:
-    msg: "Backup selecttion:  {{ lookup('pipe','SpiderOakONE --selection') }}"
+- name: Check dir /usr/lib/systemd/system/
+  file:
+    path: /usr/lib/systemd/system/
+    state: directory
+
+- name: Check dir /usr/lib/systemd/scripts/
+  file:
+    path: /usr/lib/systemd/scripts/
+    state: directory
+
+- name: Configuring Autostart 
+  template:
+    src: templates/spideroak.service.j2
+    dest: /usr/lib/systemd/system/spideroak.service
+    owner: root
+    group: root
+
+- name: Configuring Autostart /usr/lib/systemd/system/spideroak.service
+  template:
+    src: templates/spideroak.service.j2
+    dest: /usr/lib/systemd/system/spideroak.service
+    owner: root
+    group: root
+
+- name: Configuring Autostart /usr/lib/systemd/scripts/spideroak
+  template:
+    src: templates/spideroak.sh.j2
+    dest:  /usr/lib/systemd/scripts/spideroak
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Configuring Autostart spideroak.rc.j2
+  template:
+    src: templates/spideroak.rc.j2
+    dest:  "{{ ansible_env.HOME }}/.spideroak.rc"
+    owner: root
+    group: root
+
+- name: Enable Service
+  systemd:
+    name: spideroak
+    enabled: yes
+    masked: no
+
+- name: Start spideroak
+  systemd: state=started name=spideroak
