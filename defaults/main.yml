@@ -19,8 +19,12 @@ spideroakone_backup_exclude_dir: []
 spideroakone_backup_include_file: []
 spideroakone_backup_exclude_file: []
 
+spideroakone_restore_files: false
 spideroakone_restores: []
-spideroakone_restore_files: False
+
+spideroakone_restore_use_point_in_time: false
+spideroakone_restore_point_in_time: YYYY-MM-DD/hh:mm
 
 #calculated
 spideroakone_download_url: "{{spideroakone_mirror_url }}platform={{ spideroakone_platform }}&arch={{ spideroakone_arch}}"
+

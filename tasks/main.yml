@@ -1,5 +1,7 @@
 ---
 
+############# Install #############
+
 - name: Adding key 573E3D1C51AE1B3D (spideroak)
   apt_key:
     keyserver: keyserver.ubuntu.com
@@ -32,67 +34,7 @@
 - debug:
     msg: "Install result: {{ spideroakone_install_result.stdout }}"
 
-- name: Create restore directories
-  file:
-    path: "{{ item.path | dirname  }}"
-    state: directory
-  with_items: "{{ spideroakone_restores }}"
-  when: spideroakone_restore_files
-
-- name: Stopping spideroak (otherwise SpiderOakONE command will fail with "program is already running, taking no action")
-  systemd: state=stopped name=spideroak
-
-- name: Restore files
-  command: SpiderOakONE -o {{ item.path | dirname  }} --restore  {{ item.path }}
-  #command: SpiderOakONE --device {{ item.device }} -o  {{ item.path | dirname  }} --restore  {{ item.path }}
-  with_items: "{{ spideroakone_restores }}"
-  register: spideroakone_restore_result
-  when: spideroakone_restore_files
-
-- debug:
-    msg: SpiderOakONE -o  {{ item.path | dirname  }} --restore  {{ item.path }}
-  with_items: "{{ spideroakone_restores }}"
-  when: spideroakone_restore_files
-
-- debug:
-    msg: "Restore result: {{ spideroakone_restore_result }}"
-  when: spideroakone_restore_files
-
-- name: Reset Selection to support removal of files/folders
-  command: SpiderOakONE --reset-selection --force
-
-
-- name: Include dirs
-  command: SpiderOakONE --include-dir {{ item }} --force
-  with_items: "{{ spideroakone_backup_include_dir }}"
-  register: include_dir_result
-
-- name: Fail if result does not contain "Including"
-  fail:
-    msg: "The command ({{ item.cmd }}) failed"
-  when: '"Including" not in item.stdout'
-  with_items: "{{ include_dir_result.results }}"
-
-
-- name: Include file
-  command: SpiderOakONE --include-file {{ item }} --force
-  with_items: "{{ spideroakone_backup_include_file }}"
-  register: include_file_result
-
-- name: Fail if result does not contain "Including"
-  fail:
-    msg: "The command ({{ item.cmd }}) failed"
-  when: '"Including" not in item.stdout'
-  with_items: "{{ include_file_result.results }}"
-
-
-- name: Exclude dirs
-  command: SpiderOakONE --exclude-dir {{ item }} --force
-  with_items: "{{ spideroakone_backup_exclude_dir }}"
-
-- name: Exclude file
-  command: SpiderOakONE --exclude-file {{ item }} --force
-  with_items: "{{ spideroakone_backup_exclude_file }}"
+############# Service #############
 
 - name: Check dir /usr/lib/systemd/system/
   file:
@@ -138,6 +80,74 @@
     name: spideroak
     enabled: yes
     masked: no
+
+############# Application Actions #############
+
+- name: Stopping spideroak (otherwise SpiderOakONE command will fail with "program is already running, taking no action")
+  systemd: state=stopped name=spideroak
+
+- name: Create restore directories
+  file:
+    path: "{{ item.path | dirname  }}"
+    state: directory
+  with_items: "{{ spideroakone_restores }}"
+  when: spideroakone_restore_files
+
+- name: Restore files
+  command: SpiderOakONE -o {{ item.path | dirname  }} --restore  {{ item.path }}
+  #command: SpiderOakONE --device {{ item.device }} -o  {{ item.path | dirname  }} --restore  {{ item.path }}
+  with_items: "{{ spideroakone_restores }}"
+  register: spideroakone_restore_result
+  when: spideroakone_restore_files and not spideroakone_restore_use_point_in_time
+
+- name: Restore files with --point-in-time 
+  command: SpiderOakONE -o {{ item.path | dirname  }} --restore  {{ item.path }} --point-in-time {{ spideroakone_restore_point_in_time }}
+  with_items: "{{ spideroakone_restores }}"
+  register: spideroakone_restore_result
+  when: spideroakone_restore_files and spideroakone_restore_use_point_in_time
+
+- debug:
+    msg: SpiderOakONE -o  {{ item.path | dirname  }} --restore  {{ item.path }}
+  with_items: "{{ spideroakone_restores }}"
+  when: spideroakone_restore_files
+
+- debug:
+    msg: "Restore result: {{ spideroakone_restore_result }}"
+  when: spideroakone_restore_files
+
+- name: Reset Selection to support removal of files/folders
+  command: SpiderOakONE --reset-selection --force
+
+- name: Include dirs
+  command: SpiderOakONE --include-dir {{ item }} --force
+  with_items: "{{ spideroakone_backup_include_dir }}"
+  register: include_dir_result
+
+- name: Fail if result does not contain "Including"
+  fail:
+    msg: "The command ({{ item.cmd }}) failed"
+  when: '"Including" not in item.stdout'
+  with_items: "{{ include_dir_result.results }}"
+
+- name: Include file
+  command: SpiderOakONE --include-file {{ item }} --force
+  with_items: "{{ spideroakone_backup_include_file }}"
+  register: include_file_result
+
+- name: Fail if result does not contain "Including"
+  fail:
+    msg: "The command ({{ item.cmd }}) failed"
+  when: '"Including" not in item.stdout'
+  with_items: "{{ include_file_result.results }}"
+
+- name: Exclude dirs
+  command: SpiderOakONE --exclude-dir {{ item }} --force
+  with_items: "{{ spideroakone_backup_exclude_dir }}"
+
+- name: Exclude file
+  command: SpiderOakONE --exclude-file {{ item }} --force
+  with_items: "{{ spideroakone_backup_exclude_file }}"
+
 
 - name: Start spideroak
   systemd: state=started name=spideroak
