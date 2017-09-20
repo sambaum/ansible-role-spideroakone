@@ -8,7 +8,7 @@
 spideroakone_user: root
 spideroakone_group: root
 
-spideroakone_reinstall: false
+spideroakone_reinstall: "false" #needs to be s string
 
 spideroakone_mirror_url: https://spideroak.com/getbuild?
 spideroakone_platform: ubuntu
