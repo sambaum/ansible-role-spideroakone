@@ -78,7 +78,7 @@
 - name: Enable Service
   systemd:
     name: spideroak
-    enabled: yes
+    enabled: "{{ spideroakone_service_enabled }}"
     masked: no
 
 ############# Application Actions #############
@@ -148,6 +148,5 @@
   command: SpiderOakONE --exclude-file {{ item }} --force
   with_items: "{{ spideroakone_backup_exclude_file }}"
 
-
 - name: Start spideroak
-  systemd: state=started name=spideroak
+  systemd: state="{{ spideroakone_service_state }}" name=spideroak

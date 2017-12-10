@@ -28,3 +28,5 @@ spideroakone_restore_point_in_time: YYYY-MM-DD/hh:mm
 #calculated
 spideroakone_download_url: "{{spideroakone_mirror_url }}platform={{ spideroakone_platform }}&arch={{ spideroakone_arch}}"
 
+spideroakone_service_enabled: yes # yes or no
+spideroakone_service_state: started # started, stopped
